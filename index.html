@@ -453,16 +453,17 @@ body {
       <div class="upg-info">
         <div class="upg-name">Back into the Loop!</div>
         <div class="upg-effect"><span class="e-fin">×2 Þ</span> <span style="color:var(--text3)">(final)</span></div>
-      </div>
-    </div>
 
     <!-- #2l -->
-    <div class="upg upg--disabled" id="upg-2l" onclick="toggleUpg('2l','loop')">
+    <div class="upg" id="upg-2l" onclick="toggleUpg('2l','loop')">
       <div class="cbox" id="cbox-2l"></div>
       <div class="upg-badge upg-badge--l" id="badge-2l">#2l</div>
       <div class="upg-info">
         <div class="upg-name">Damage Control</div>
-        <div class="upg-effect"><span class="e-lps">#8 pollution: 45 → 15</span> per level</div>
+        <div class="upg-effect">#8 pollution: 45 → 15 per level</div>
+      </div>
+    </div>
+
       </div>
     </div>
 
@@ -995,10 +996,9 @@ function updateUI() {
     const cb = document.getElementById('cbox-' + id);
     const bd = document.getElementById('badge-' + id);
     if (!el) return;
-    const ok = parentsOk('loop', id);
     const locked = isLocked('loop', id);
     const on = (S.loop[id] || 0) > 0;
-    el.className = 'upg' + (!ok ? ' upg--disabled' : '') + (locked ? ' upg--locked' : '') + (on ? ' upg--on' : '');
+    el.className = 'upg' + (locked ? ' upg--locked' : '') + (on ? ' upg--on' : '');
     if (cb) cb.className = 'cbox' + (on ? ' checked--l' : '');
     if (bd) bd.className = 'upg-badge upg-badge--l' + (on ? ' active-loop' : '');
   });
@@ -1199,7 +1199,7 @@ function recalc() {
     ? 'No active pollution sources selected.'
     : pollution.maintenanceActive
       ? `Cleaning is active. Raw output ${fmt(rawPps)} Þ/s is reduced to ${fmt(pps)} Þ/s.`
-      : `Selected upgrades produce ${fmt(pollution.total)} PM₁₀, placing you in ${pollution.phase.label}${S.loop['2l'] > 0 ? ' (#2l active: #8 uses 15 PM₁₀/level)' : ''}.`;
+      : `Selected upgrades produce ${fmt(pollution.total)} PM₁₀, placing you in ${pollution.phase.label}.`;
 
   if (pollution.phase.next) {
     pollutionNext.textContent = `${fmt(pollution.phase.maxScore + 1)} PM₁₀ → ${pollution.phase.next}`;
