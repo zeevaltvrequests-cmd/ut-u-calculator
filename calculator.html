@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Þ / Ⱡ Upgrade Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #08080e;
+  --surface: #0f0f1a;
+  --surface2: #141422;
+  --surface3: #1a1a2e;
+  --border: #222238;
+  --border2: #2d2d4a;
+  --pts: #f5c518;
+  --pts-glow: rgba(245,197,24,0.3);
+  --lps: #18d4ff;
+  --lps-glow: rgba(24,212,255,0.25);
+  --green: #2ef584;
+  --red: #f54040;
+  --purple: #bf7fff;
+  --orange: #ff9020;
+  --text: #e0e0f0;
+  --text2: #8888aa;
+  --text3: #4a4a6a;
+  --mono: 'JetBrains Mono', monospace;
+  --ui: 'Sora', sans-serif;
+  --r: 10px;
+  --r-sm: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--ui);
+  background: var(--bg);
+  color: var(--text);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 10% -10%, rgba(245,197,24,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(24,212,255,0.05) 0%, transparent 60%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── TOP BAR ─── */
+.topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 28px;
+  background: rgba(15,15,26,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 200;
+}
+.topbar-logo {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.5px;
+  display: flex; align-items: center; gap: 10px;
+}
+.pill {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+}
+.pill-pts { background: rgba(245,197,24,0.14); color: var(--pts); border: 1px solid rgba(245,197,24,0.3); }
+.pill-lps { background: rgba(24,212,255,0.1); color: var(--lps); border: 1px solid rgba(24,212,255,0.2); }
+.topbar-sub { margin-left: auto; font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* ─── LAYOUT ─── */
+.layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  height: calc(100vh - 57px);
+  overflow: hidden;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.group-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text3);
+  padding: 12px 6px 6px; border-bottom: 1px solid var(--border);
+  margin: 4px 0 2px;
+}
+.group-label:first-child { padding-top: 0; }
+
+/* Upgrade row */
+.upg {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  transition: all 0.12s; cursor: pointer;
+  user-select: none;
+}
+.upg:hover:not(.upg--disabled):not(.upg--locked) { background: rgba(255,255,255,0.025); border-color: var(--border); }
+.upg.upg--on { background: rgba(255,255,255,0.03); border-color: var(--border2); }
+.upg.upg--disabled { opacity: 0.3; cursor: not-allowed; }
+.upg.upg--locked { opacity: 0.22; cursor: not-allowed; }
+
+.upg-badge {
+  width: 30px; height: 30px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  flex-shrink: 0; transition: all 0.15s; border: 1px solid;
+}
+.upg-badge--n { border-color: rgba(245,197,24,0.2); background: rgba(245,197,24,0.07); color: var(--pts); }
+.upg-badge--l { border-color: rgba(24,212,255,0.2); background: rgba(24,212,255,0.06); color: var(--lps); }
+.upg.upg--on .upg-badge--n { border-color: var(--pts); background: rgba(245,197,24,0.18); box-shadow: 0 0 10px var(--pts-glow); }
+.upg.upg--on .upg-badge--l { border-color: var(--lps); background: rgba(24,212,255,0.15); box-shadow: 0 0 10px var(--lps-glow); }
+
+.upg-info { flex: 1; min-width: 0; }
+.upg-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.upg-effect { font-size: 10px; color: var(--text2); margin-top: 1px; font-family: var(--mono); line-height: 1.3; }
+.e-add { color: var(--green); }
+.e-reg { color: var(--pts); }
+.e-fin { color: var(--purple); }
+.e-lps { color: var(--lps); }
+.e-neg { color: var(--red); }
+
+/* Stepper */
+.stepper { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.sbtn {
+  width: 20px; height: 20px; border-radius: 4px;
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s; line-height: 1;
+}
+.sbtn:hover:not(:disabled) { background: var(--border2); }
+.sbtn:disabled { opacity: 0.3; cursor: not-allowed; }
+.sval {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  min-width: 28px; text-align: center; color: var(--text);
+}
+.smax { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+
+/* Checkbox */
+.cbox {
+  width: 16px; height: 16px; border-radius: 3px;
+  border: 1.5px solid var(--border2); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.12s;
+}
+.cbox.checked--n { background: var(--pts); border-color: var(--pts); }
+.cbox.checked--l { background: var(--lps); border-color: var(--lps); }
+.cbox.checked--n::after, .cbox.checked--l::after { content: '✓'; font-size: 10px; color: #000; font-weight: 900; }
+
+/* Mutex box */
+.mutex-wrap {
+  border: 1px solid rgba(255,144,32,0.3);
+  border-radius: 8px; padding: 8px;
+  background: rgba(255,144,32,0.03);
+  position: relative; margin: 2px 0;
+}
+.mutex-tag {
+  position: absolute; top: -8px; left: 8px;
+  background: var(--bg); padding: 0 6px;
+  font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--orange); font-family: var(--mono);
+}
+
+/* ─── MAIN ─── */
+.main {
+  overflow-y: auto; padding: 24px;
+  display: flex; flex-direction: column; gap: 18px;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.main::-webkit-scrollbar { width: 4px; }
+.main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Card */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px;
+}
+.card-hd {
+  font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 14px;
+}
+
+/* Main stat */
+.stat-main { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.stat-num {
+  font-family: var(--mono); font-size: 48px; font-weight: 700;
+  letter-spacing: -2px; line-height: 1;
+  transition: color 0.2s;
+}
+.stat-num--pts { color: var(--pts); text-shadow: 0 0 30px var(--pts-glow); }
+.stat-num--lps { color: var(--lps); text-shadow: 0 0 30px var(--lps-glow); }
+.stat-num--zero { color: var(--text3); text-shadow: none; }
+.stat-unit { font-size: 20px; font-weight: 500; color: var(--text2); }
+.stat-sub { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+/* Breakdown table */
+.bdown { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+.bdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+.bdown-lbl { color: var(--text2); }
+.bdown-val { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+
+/* Mini cards grid */
+.mini-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.mini-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px;
+}
+.mini-lbl { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.mini-val { font-family: var(--mono); font-size: 15px; font-weight: 700; }
+
+/* Input row */
+.inp-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.inp-lbl { font-size: 12px; color: var(--text2); }
+.inp {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 13px;
+  padding: 7px 11px; border-radius: 6px; outline: none;
+  transition: border-color 0.15s; width: 150px;
+}
+.inp:focus { border-color: var(--pts); }
+.inp.inp--lps:focus { border-color: var(--lps); }
+.inp-res { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+
+/* Comparison */
+.comp-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 14px; }
+.comp-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; text-align: center;
+  transition: all 0.2s;
+}
+.comp-card.comp--active { border-color: var(--pts); background: rgba(245,197,24,0.05); }
+.comp-card.comp--comp { border-color: var(--lps); background: rgba(24,212,255,0.04); }
+.comp-card.comp--exp { border-color: var(--green); background: rgba(46,245,132,0.03); }
+.comp-head { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 10px; }
+.comp-pts { font-family: var(--mono); font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+.comp-lps-line { font-family: var(--mono); font-size: 12px; color: var(--lps); margin-bottom: 4px; }
+.comp-eff { font-size: 11px; color: var(--text3); }
+.comp-eff-val { font-family: var(--mono); font-size: 12px; color: var(--green); font-weight: 600; }
+
+/* Bar */
+.bar-wrap { margin-top: 8px; background: var(--border); border-radius: 3px; height: 5px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+/* Chart */
+.chart-wrap { position: relative; height: 220px; margin-top: 14px; }
+
+/* Eff badge */
+.winner-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  padding: 2px 7px; border-radius: 12px; margin-top: 5px;
+  background: rgba(46,245,132,0.15); color: var(--green);
+  border: 1px solid rgba(46,245,132,0.3); letter-spacing: 0.5px;
+}
+
+/* Separator */
+.sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Tooltip hint */
+.hint { font-size: 11px; color: var(--text3); font-style: italic; margin-top: 4px; }
+
+/* Notice */
+.notice {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 6px;
+  background: rgba(245,64,64,0.08); border: 1px solid rgba(245,64,64,0.2);
+  font-size: 12px; color: var(--red); margin-top: 8px;
+}
+
+/* Responsive tweak */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; height: auto; }
+  .sidebar { height: 50vh; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    ⬡ <span>Upgrade Calculator</span>
+  </div>
+  <span class="pill pill-pts">Þ Points</span>
+  <span class="pill pill-lps">Ⱡ Loops</span>
+  <span class="topbar-sub">Accuracy-focused · Live</span>
+</div>
+
+<div class="layout">
+  <!-- ── SIDEBAR ─────────────────────── -->
+  <div class="sidebar" id="sidebar">
+
+    <div class="group-label">Normal Upgrades</div>
+
+    <!-- #1 -->
+    <div class="upg" id="upg-1" onclick="toggleUpg('1','normal')">
+      <div class="cbox" id="cbox-1"></div>
+      <div class="upg-badge upg-badge--n" id="badge-1">#1</div>
+      <div class="upg-info">
+        <div class="upg-name">Fresh Start!</div>
+        <div class="upg-effect"><span class="e-add">+1 Þ base/s</span></div>
+      </div>
+    </div>
+
+    <!-- #2 -->
+    <div class="upg upg--disabled" id="upg-2" onclick="toggleUpg('2','normal')">
+      <div class="cbox" id="cbox-2"></div>
+      <div class="upg-badge upg-badge--n" id="badge-2">#2</div>
+      <div class="upg-info">
+        <div class="upg-name">Double Up!</div>
+        <div class="upg-effect"><span class="e-reg">×2 Þ</span> <span style="color:var(--text3)">(regular)</span></div>
+      </div>
+    </div>
+
+    <!-- #3 -->
+    <div class="upg upg--disabled" id="upg-3" onclick="toggleUpg('3','normal')">
+      <div class="cbox" id="cbox-3"></div>
+      <div class="upg-badge upg-badge--n" id="badge-3">#3</div>
+      <div class="upg-info">
+        <div class="upg-name">One-And-A-Half Up</div>
+        <div class="upg-effect"><span class="e-reg">×1.5 Þ</span> <span style="color:var(--text3)">(regular)</span></div>
+      </div>
+    </div>
+
+    <!-- #4 -->
+    <div class="upg upg--disabled" id="upg-4" onclick="">
+      <div class="upg-badge upg-badge--n" id="badge-4">#4</div>
+      <div class="upg-info">
+        <div class="upg-name">Slowly but Steady</div>
+        <div class="upg-effect"><span class="e-add">+1 Þ/s</span> per level</div>
+      </div>
+      <div class="stepper">
+        <button class="sbtn" onclick="stepUpg(event,'4','normal',-1)" id="sbtn4-">−</button>
+        <span class="sval" id="sval-4">0</span>
+        <button class="sbtn" onclick="stepUpg(event,'4','normal',1)" id="sbtn4+">+</button>
+        <span class="smax" id="smax-4">/5</span>
+      </div>
+    </div>
+
+    <!-- #5 -->
+    <div class="upg upg--disabled" id="upg-5" onclick="toggleUpg('5','normal')">
+      <div class="cbox" id="cbox-5"></div>
+      <div class="upg-badge upg-badge--n" id="badge-5">#5</div>
+      <div class="upg-info">
+        <div class="upg-name">Double Up Again?</div>
+        <div class="upg-effect"><span class="e-reg">×2 Þ</span> <span style="color:var(--text3)">(regular)</span></div>
+      </div>
+    </div>
+
+    <!-- #6 -->
+    <div class="upg upg--disabled" id="upg-6" onclick="">
+      <div class="upg-badge upg-badge--n" id="badge-6">#6</div>
+      <div class="upg-info">
+        <div class="upg-name">Steady Gains</div>
+        <div class="upg-effect"><span class="e-add">+3 Þ/s</span> per level</div>
+      </div>
+      <div class="stepper">
+        <button class="sbtn" onclick="stepUpg(event,'6','normal',-1)" id="sbtn6-">−</button>
+        <span class="sval" id="sval-6">0</span>
+        <button class="sbtn" onclick="stepUpg(event,'6','normal',1)" id="sbtn6+">+</button>
+        <span class="smax">/4</span>
+      </div>
+    </div>
+
+    <!-- #7 -->
+    <div class="upg upg--disabled" id="upg-7" onclick="">
+      <div class="upg-badge upg-badge--n" id="badge-7">#7</div>
+      <div class="upg-info">
+        <div class="upg-name">Steady-er Gains?</div>
+        <div class="upg-effect"><span class="e-add">+8 Þ/s</span> per level</div>
+      </div>
+      <div class="stepper">
+        <button class="sbtn" onclick="stepUpg(event,'7','normal',-1)" id="sbtn7-">−</button>
+        <span class="sval" id="sval-7">0</span>
+        <button class="sbtn" onclick="stepUpg(event,'7','normal',1)" id="sbtn7+">+</button>
+        <span class="smax" id="smax-7">/5</span>
+      </div>
+    </div>
+
+    <!-- #8 -->
+    <div class="upg upg--disabled" id="upg-8" onclick="">
+      <div class="upg-badge upg-badge--n" id="badge-8">#8</div>
+      <div class="upg-info">
+        <div class="upg-name">Steady-est Gains?</div>
+        <div class="upg-effect"><span class="e-add">+12 Þ/s</span> per level</div>
+      </div>
+      <div class="stepper">
+        <button class="sbtn" onclick="stepUpg(event,'8','normal',-1)" id="sbtn8-">−</button>
+        <span class="sval" id="sval-8">0</span>
+        <button class="sbtn" onclick="stepUpg(event,'8','normal',1)" id="sbtn8+">+</button>
+        <span class="smax">/5</span>
+      </div>
+    </div>
+
+    <!-- #9a / #9b mutex -->
+    <div class="mutex-wrap">
+      <div class="mutex-tag">CHOOSE ONE</div>
+      <div class="upg upg--disabled" id="upg-9a" onclick="toggleUpg('9a','normal')" style="margin-bottom:4px">
+        <div class="cbox" id="cbox-9a"></div>
+        <div class="upg-badge upg-badge--n" id="badge-9a">#9a</div>
+        <div class="upg-info">
+          <div class="upg-name">Trade-In</div>
+          <div class="upg-effect"><span class="e-reg">×2 Þ</span> <span style="color:var(--text3)">(regular)</span> · locks #9b</div>
+        </div>
+      </div>
+      <div class="upg upg--disabled" id="upg-9b" onclick="">
+        <div class="upg-badge upg-badge--n" id="badge-9b">#9b</div>
+        <div class="upg-info">
+          <div class="upg-name">Trade-Off</div>
+          <div class="upg-effect"><span class="e-add">+30 Þ/s</span> per level · #7 max→10 · locks #9a</div>
+        </div>
+        <div class="stepper">
+          <button class="sbtn" onclick="stepUpg(event,'9b','normal',-1)" id="sbtn9b-">−</button>
+          <span class="sval" id="sval-9b">0</span>
+          <button class="sbtn" onclick="stepUpg(event,'9b','normal',1)" id="sbtn9b+">+</button>
+          <span class="smax">/3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- #10 -->
+    <div class="upg upg--disabled" id="upg-10" onclick="">
+      <div class="upg-badge upg-badge--n" id="badge-10">#10</div>
+      <div class="upg-info">
+        <div class="upg-name">Converging Stream</div>
+        <div class="upg-effect"><span class="e-add">+25 Þ/s</span> per level</div>
+      </div>
+      <div class="stepper">
+        <button class="sbtn" onclick="stepUpg(event,'10','normal',-1)" id="sbtn10-">−</button>
+        <span class="sval" id="sval-10">0</span>
+        <button class="sbtn" onclick="stepUpg(event,'10','normal',1)" id="sbtn10+">+</button>
+        <span class="smax">/3</span>
+      </div>
+    </div>
+
+    <!-- ── LOOP UPGRADES ── -->
+    <div class="group-label">Loop Upgrades — Þ Boosts</div>
+
+    <!-- #1l -->
+    <div class="upg" id="upg-1l" onclick="toggleUpg('1l','loop')">
+      <div class="cbox" id="cbox-1l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-1l">#1l</div>
+      <div class="upg-info">
+        <div class="upg-name">Back into the Loop!</div>
+        <div class="upg-effect"><span class="e-fin">×2 Þ</span> <span style="color:var(--text3)">(final)</span></div>
+      </div>
+    </div>
+
+    <!-- #7l -->
+    <div class="upg" id="upg-7l" onclick="toggleUpg('7l','loop')">
+      <div class="cbox" id="cbox-7l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-7l">#7l</div>
+      <div class="upg-info">
+        <div class="upg-name">Faster Gains</div>
+        <div class="upg-effect"><span class="e-fin">×2 Þ</span> <span style="color:var(--text3)">(final)</span></div>
+      </div>
+    </div>
+
+    <!-- #9l -->
+    <div class="upg" id="upg-9l" onclick="toggleUpg('9l','loop')">
+      <div class="cbox" id="cbox-9l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-9l">#9l</div>
+      <div class="upg-info">
+        <div class="upg-name">New Lands</div>
+        <div class="upg-effect"><span class="e-fin">×1.5 Þ</span> <span style="color:var(--text3)">(final)</span></div>
+      </div>
+    </div>
+
+    <!-- #8l -->
+    <div class="upg" id="upg-8l" onclick="toggleUpg('8l','loop')">
+      <div class="cbox" id="cbox-8l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-8l">#8l</div>
+      <div class="upg-info">
+        <div class="upg-name">Counterweight</div>
+        <div class="upg-effect"><span class="e-fin">×1.5 Þ</span> (final) · <span class="e-lps">×1.35 Ⱡ</span></div>
+      </div>
+    </div>
+
+    <!-- #12l -->
+    <div class="upg" id="upg-12l" onclick="toggleUpg('12l','loop')">
+      <div class="cbox" id="cbox-12l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-12l">#12l</div>
+      <div class="upg-info">
+        <div class="upg-name">Crash Course</div>
+        <div class="upg-effect"><span class="e-reg">×1.5 Þ</span> (regular) · −30s MaxTimer</div>
+      </div>
+    </div>
+
+    <!-- #6la / #6lb mutex -->
+    <div class="mutex-wrap">
+      <div class="mutex-tag">CHOOSE ONE</div>
+      <div class="upg" id="upg-6la" onclick="toggleUpg('6la','loop')" style="margin-bottom:4px">
+        <div class="cbox" id="cbox-6la"></div>
+        <div class="upg-badge upg-badge--l" id="badge-6la">#6la</div>
+        <div class="upg-info">
+          <div class="upg-name">Compression</div>
+          <div class="upg-effect"><span class="e-neg">×0.65 Þ</span> (final) · <span class="e-lps">×2 Ⱡ</span></div>
+        </div>
+      </div>
+      <div class="upg" id="upg-6lb" onclick="toggleUpg('6lb','loop')">
+        <div class="cbox" id="cbox-6lb"></div>
+        <div class="upg-badge upg-badge--l" id="badge-6lb">#6lb</div>
+        <div class="upg-info">
+          <div class="upg-name">Expansion</div>
+          <div class="upg-effect"><span class="e-fin">×1.7 Þ</span> (final) · <span class="e-neg">×0.5 Ⱡ</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-label">Loop Upgrades — Ⱡ Only</div>
+
+    <!-- #3l -->
+    <div class="upg" id="upg-3l" onclick="toggleUpg('3l','loop')">
+      <div class="cbox" id="cbox-3l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-3l">#3l</div>
+      <div class="upg-info">
+        <div class="upg-name">Loop Efficiency</div>
+        <div class="upg-effect"><span class="e-lps">×1.2 Ⱡ</span> gain (regular)</div>
+      </div>
+    </div>
+
+    <!-- #4l -->
+    <div class="upg" id="upg-4l" onclick="toggleUpg('4l','loop')">
+      <div class="cbox" id="cbox-4l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-4l">#4l</div>
+      <div class="upg-info">
+        <div class="upg-name">A more efficient loop</div>
+        <div class="upg-effect"><span class="e-lps">×1.35 Ⱡ</span> gain (regular)</div>
+      </div>
+    </div>
+
+    <!-- #11l -->
+    <div class="upg" id="upg-11l" onclick="toggleUpg('11l','loop')">
+      <div class="cbox" id="cbox-11l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-11l">#11l</div>
+      <div class="upg-info">
+        <div class="upg-name">Loops loop Loops</div>
+        <div class="upg-effect"><span class="e-lps">Dynamic Ⱡ boost</span> (based on total Ⱡ)</div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── MAIN ────────────────────────── -->
+  <div class="main">
+
+    <!-- Points per second -->
+    <div class="card">
+      <div class="card-hd">Points per Second</div>
+      <div class="stat-main">
+        <div class="stat-num stat-num--zero" id="pts-stat">0</div>
+        <div class="stat-unit">Þ/s</div>
+      </div>
+      <div class="stat-sub" id="pts-sub">Purchase #1 (Fresh Start) to begin</div>
+
+      <div class="bdown">
+        <div class="bdown-row">
+          <span class="bdown-lbl">Base + Additive</span>
+          <span class="bdown-val" id="bd-add" style="color:var(--green)">1 + 0 = 1</span>
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl">× Regular Multiplier</span>
+          <span class="bdown-val" id="bd-reg" style="color:var(--pts)">×1</span>
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl">× Final Multiplier</span>
+          <span class="bdown-val" id="bd-fin" style="color:var(--purple)">×1</span>
+        </div>
+        <div class="sep" style="margin:3px 0"></div>
+        <div class="bdown-row">
+          <span class="bdown-lbl" style="font-weight:600;color:var(--text)">= Result</span>
+          <span class="bdown-val" id="bd-result" style="color:var(--pts);font-size:15px">0 Þ/s</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multiplier breakdown mini grid -->
+    <div class="card">
+      <div class="card-hd">Multiplier Breakdown</div>
+      <div class="mini-grid">
+        <div class="mini-card">
+          <div class="mini-lbl">Additive Sum</div>
+          <div class="mini-val" id="mm-add" style="color:var(--green)">+0</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-lbl">Regular ×</div>
+          <div class="mini-val" id="mm-reg" style="color:var(--pts)">×1.00</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-lbl">Final ×</div>
+          <div class="mini-val" id="mm-fin" style="color:var(--purple)">×1.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time & points calculator -->
+    <div class="card">
+      <div class="card-hd">Time & Points Calculator</div>
+
+      <div class="inp-row">
+        <span class="inp-lbl">Target Þ amount:</span>
+        <input class="inp" id="inp-target" type="text" value="10000" oninput="recalc()" placeholder="e.g. 1e6">
+        <span class="inp-res" id="time-to-target" style="color:var(--lps)">—</span>
+      </div>
+      <div class="hint">How long to accumulate this many Þ at your current rate</div>
+
+      <div class="sep" style="margin:12px 0"></div>
+
+      <div class="inp-row">
+        <span class="inp-lbl">MaxTimer (s):</span>
+        <input class="inp" id="inp-timer" type="text" value="180" oninput="recalc()" placeholder="180">
+        <span class="inp-lbl" style="margin-left:4px">→</span>
+        <span class="inp-res" id="pts-at-timer" style="color:var(--pts)">—</span>
+        <span class="inp-lbl">Þ per run</span>
+      </div>
+      <div class="hint">Þ accumulated when timer runs out (Þ/s × MaxTimer)</div>
+    </div>
+
+    <!-- Loop reset calculator -->
+    <div class="card">
+      <div class="card-hd">Loop Reset Calculator</div>
+
+      <div class="bdown" style="margin-top:0;padding-top:0;border-top:none;">
+        <div class="bdown-row">
+          <span class="bdown-lbl">Loop Factor (×)</span>
+          <span class="bdown-val" id="lps-factor" style="color:var(--lps)">×1.00</span>
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl" style="font-size:11px;color:var(--text3)">from #3l, #4l, #6la/#6lb, #8l, #11l</span>
+          <span></span>
+        </div>
+      </div>
+
+      <div id="dyn-boost-row" style="display:none;margin-top:10px">
+        <div class="inp-row">
+          <span class="inp-lbl">#11l — Total Ⱡ earned:</span>
+          <input class="inp inp--lps" id="inp-totalloops" type="text" value="0" oninput="recalc()" placeholder="0">
+          <span class="inp-res" id="dyn-boost-val" style="color:var(--lps)">×1.00 boost</span>
+        </div>
+        <div class="hint">Formula: min(5, 1 + (Ⱡtotal/1000)^0.4 × 0.5)</div>
+      </div>
+
+      <div class="sep" style="margin:12px 0"></div>
+
+      <div class="inp-row">
+        <span class="inp-lbl">Þ at reset:</span>
+        <input class="inp inp--lps" id="inp-reset-pts" type="text" value="10000" oninput="recalc()" placeholder="e.g. 50000">
+        <span class="inp-res">→</span>
+        <span class="inp-res" id="lps-gained" style="color:var(--lps)">0 Ⱡ</span>
+      </div>
+      <div class="hint">Formula: (Þ at reset ÷ 2000) × Loop Factor</div>
+
+      <div class="sep" style="margin:12px 0"></div>
+      <div class="bdown-row">
+        <span class="bdown-lbl">Ⱡ/hour (efficiency)</span>
+        <span class="bdown-val" id="lps-per-hour" style="color:var(--lps)">—</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Based on Þ/s × Loop Factor (higher = faster Ⱡ farming)</div>
+    </div>
+
+    <!-- Compression vs Expansion comparison -->
+    <div class="card">
+      <div class="card-hd">Compression vs. Expansion — Full Comparison</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+        Showing your current setup against each option. Other settings stay the same.
+      </div>
+
+      <div class="comp-row">
+        <!-- Neither -->
+        <div class="comp-card" id="comp-none">
+          <div class="comp-head" style="color:var(--text2)">Neither</div>
+          <div class="comp-pts" id="cn-pts" style="color:var(--pts)">—</div>
+          <div class="comp-lps-line" id="cn-lps">Ⱡ Factor: ×1.00</div>
+          <div class="comp-eff">Efficiency</div>
+          <div class="comp-eff-val" id="cn-eff">—</div>
+          <div class="bar-wrap"><div class="bar-fill" id="cn-bar" style="background:var(--text2);width:0%"></div></div>
+        </div>
+
+        <!-- Compression -->
+        <div class="comp-card comp--comp" id="comp-comp">
+          <div class="comp-head" style="color:var(--lps)">#6la Compression</div>
+          <div class="comp-pts" id="cc-pts" style="color:var(--pts)">—</div>
+          <div class="comp-lps-line" id="cc-lps">Ⱡ Factor: ×2.00</div>
+          <div class="comp-eff">Efficiency</div>
+          <div class="comp-eff-val" id="cc-eff">—</div>
+          <div class="bar-wrap"><div class="bar-fill" id="cc-bar" style="background:var(--lps);width:0%"></div></div>
+          <div id="cc-badge" style="display:none" class="winner-badge">BEST Ⱡ/time</div>
+        </div>
+
+        <!-- Expansion -->
+        <div class="comp-card comp--exp" id="comp-exp">
+          <div class="comp-head" style="color:var(--green)">#6lb Expansion</div>
+          <div class="comp-pts" id="ce-pts" style="color:var(--pts)">—</div>
+          <div class="comp-lps-line" id="ce-lps">Ⱡ Factor: ×0.50</div>
+          <div class="comp-eff">Efficiency</div>
+          <div class="comp-eff-val" id="ce-eff">—</div>
+          <div class="bar-wrap"><div class="bar-fill" id="ce-bar" style="background:var(--green);width:0%"></div></div>
+          <div id="ce-badge" style="display:none" class="winner-badge">BEST Ⱡ/time</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="compChart"></canvas>
+      </div>
+      <div id="comp-verdict" style="margin-top:12px;font-size:12px;color:var(--text2);padding:10px 14px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+        Select some upgrades to see the comparison.
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const S = {
+  normal: { '1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9a':0,'9b':0,'10':0 },
+  loop:   { '1l':0,'3l':0,'4l':0,'6la':0,'6lb':0,'7l':0,'8l':0,'9l':0,'11l':0,'12l':0 }
+};
+
+// ─── UPGRADE RULES ───────────────────────────────────────────────────────────
+// parents: array of required upgrade refs (normal IDs)
+// justOneParent: true = only one required
+// locks: ID that this upgrade locks out
+const RULES = {
+  normal: {
+    '1':  { parents: [],               max: () => 1 },
+    '2':  { parents: ['n:1'],          max: () => 1 },
+    '3':  { parents: ['n:2'],          max: () => 1 },
+    '4':  { parents: ['n:2'],          max: () => 5 },
+    '5':  { parents: ['n:3'],          max: () => 1 },
+    '6':  { parents: ['n:4'],          max: () => 4 },
+    '7':  { parents: ['n:5','n:6'], justOne: true, max: () => S.normal['9b'] > 0 ? 10 : 5 },
+    '8':  { parents: ['n:7'],          max: () => 5 },
+    '9a': { parents: ['n:8'],          max: () => 1, locks: 'n:9b' },
+    '9b': { parents: ['n:8'],          max: () => 3, locks: 'n:9a' },
+    '10': { parents: ['n:9a','n:9b'], justOne: true, max: () => 3 },
+  },
+  loop: {
+    '1l':  { parents: [], max: () => 1 },
+    '3l':  { parents: [], max: () => 1 },
+    '4l':  { parents: [], max: () => 1 },
+    '6la': { parents: [], max: () => 1, locks: 'l:6lb' },
+    '6lb': { parents: [], max: () => 1, locks: 'l:6la' },
+    '7l':  { parents: [], max: () => 1 },
+    '8l':  { parents: [], max: () => 1 },
+    '9l':  { parents: [], max: () => 1 },
+    '11l': { parents: [], max: () => 1 },
+    '12l': { parents: [], max: () => 1 },
+  }
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!isFinite(n) || isNaN(n)) return '∞';
+  if (n === 0) return '0';
+  const abs = Math.abs(n);
+  const sfx = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd'];
+  const i = Math.min(Math.floor(Math.log10(abs) / 3), sfx.length - 1);
+  if (i === 0) {
+    if (n % 1 === 0) return n.toString();
+    return n.toPrecision(4).replace(/\.?0+$/, '');
+  }
+  const v = n / Math.pow(1000, i);
+  return v.toFixed(2).replace(/\.?0+$/, '') + sfx[i];
+}
+
+function fmtTime(s) {
+  if (!isFinite(s) || s <= 0) return '—';
+  if (s < 60) return s.toFixed(1) + 's';
+  if (s < 3600) return (s/60).toFixed(1) + 'm';
+  if (s < 86400) return (s/3600).toFixed(2) + 'h';
+  return (s/86400).toFixed(2) + 'd';
+}
+
+function parseNum(str) {
+  if (!str) return 0;
+  const v = Number(str.replace(/,/g, '').trim());
+  return isNaN(v) ? 0 : v;
+}
+
+function isLocked(area, id) {
+  const rule = RULES[area]?.[id];
+  if (!rule || !rule.locks) return false;
+  const [la, li] = rule.locks.split(':');
+  const st = la === 'n' ? S.normal : S.loop;
+  return (st[li] || 0) > 0;
+}
+
+function parentsOk(area, id) {
+  const rule = RULES[area]?.[id];
+  if (!rule || rule.parents.length === 0) return true;
+  const check = ref => {
+    const [la, li] = ref.split(':');
+    const st = la === 'n' ? S.normal : S.loop;
+    return (st[li] || 0) > 0;
+  };
+  if (rule.justOne) return rule.parents.some(check);
+  return rule.parents.every(check);
+}
+
+// ─── TOGGLE ──────────────────────────────────────────────────────────────────
+function toggleUpg(id, area) {
+  if (!parentsOk(area, id)) return;
+  if (isLocked(area, id)) return;
+  const st = area === 'normal' ? S.normal : S.loop;
+  st[id] = st[id] > 0 ? 0 : 1;
+  // enforce mutex
+  const rule = RULES[area]?.[id];
+  if (rule?.locks && st[id] > 0) {
+    const [la, li] = rule.locks.split(':');
+    (la === 'n' ? S.normal : S.loop)[li] = 0;
+  }
+  updateUI();
+  recalc();
+}
+
+function stepUpg(evt, id, area, delta) {
+  evt.stopPropagation();
+  if (!parentsOk(area, id)) return;
+  if (isLocked(area, id)) return;
+  const st = area === 'normal' ? S.normal : S.loop;
+  const rule = RULES[area]?.[id];
+  const mx = rule ? rule.max() : 1;
+  st[id] = Math.max(0, Math.min(mx, (st[id] || 0) + delta));
+  updateUI();
+  recalc();
+}
+
+// ─── UI SYNC ─────────────────────────────────────────────────────────────────
+function updateUI() {
+  // Normal checkboxes / steppers
+  ['1','2','3','5','9a'].forEach(id => {
+    const el = document.getElementById('upg-' + id);
+    const cb = document.getElementById('cbox-' + id);
+    const bd = document.getElementById('badge-' + id);
+    if (!el) return;
+    const ok = parentsOk('normal', id);
+    const locked = isLocked('normal', id);
+    const on = (S.normal[id] || 0) > 0;
+    el.className = 'upg' + (!ok ? ' upg--disabled' : '') + (locked ? ' upg--locked' : '') + (on ? ' upg--on' : '');
+    if (cb) {
+      cb.className = 'cbox' + (on ? ' checked--n' : '');
+    }
+    if (bd) {
+      bd.className = 'upg-badge upg-badge--n' + (on ? ' active-normal' : '');
+    }
+  });
+
+  // Normal steppers
+  ['4','6','7','8','9b','10'].forEach(id => {
+    const el = document.getElementById('upg-' + id);
+    const sv = document.getElementById('sval-' + id);
+    const bd = document.getElementById('badge-' + id);
+    const btnP = document.getElementById('sbtn' + id + '+');
+    const btnM = document.getElementById('sbtn' + id + '-');
+    if (!el) return;
+    const ok = parentsOk('normal', id);
+    const locked = isLocked('normal', id);
+    const v = S.normal[id] || 0;
+    const mx = RULES.normal[id]?.max() || 1;
+    el.className = 'upg' + (!ok ? ' upg--disabled' : '') + (locked ? ' upg--locked' : '') + (v > 0 ? ' upg--on' : '');
+    if (sv) sv.textContent = v;
+    if (bd) bd.className = 'upg-badge upg-badge--n' + (v > 0 ? ' active-normal' : '');
+    if (btnP) btnP.disabled = !ok || locked || v >= mx;
+    if (btnM) btnM.disabled = !ok || locked || v <= 0;
+
+    // update max display for #7
+    if (id === '7') {
+      const sm = document.getElementById('smax-7');
+      if (sm) sm.textContent = '/' + mx;
+    }
+  });
+
+  // Loop checkboxes
+  ['1l','3l','4l','6la','6lb','7l','8l','9l','11l','12l'].forEach(id => {
+    const el = document.getElementById('upg-' + id);
+    const cb = document.getElementById('cbox-' + id);
+    const bd = document.getElementById('badge-' + id);
+    if (!el) return;
+    const locked = isLocked('loop', id);
+    const on = (S.loop[id] || 0) > 0;
+    el.className = 'upg' + (locked ? ' upg--locked' : '') + (on ? ' upg--on' : '');
+    if (cb) cb.className = 'cbox' + (on ? ' checked--l' : '');
+    if (bd) bd.className = 'upg-badge upg-badge--l' + (on ? ' active-loop' : '');
+  });
+
+  // #11l dynamic row
+  const dyn = document.getElementById('dyn-boost-row');
+  if (dyn) dyn.style.display = S.loop['11l'] > 0 ? 'block' : 'none';
+}
+
+// ─── CALCULATION ─────────────────────────────────────────────────────────────
+function calcPtsComponents() {
+  const n = S.normal, l = S.loop;
+  const has1 = n['1'] > 0;
+  if (!has1) return { pps: 0, base: 0, add: 0, reg: 1, fin: 1 };
+
+  let add = 0;
+  add += (n['4'] || 0) * 1;
+  add += (n['6'] || 0) * 3;
+  add += (n['7'] || 0) * 8;
+  add += (n['8'] || 0) * 12;
+  add += (n['9b'] || 0) * 30;
+  add += (n['10'] || 0) * 25;
+
+  let reg = 1;
+  if (n['2'] > 0) reg *= 2;
+  if (n['3'] > 0) reg *= 1.5;
+  if (n['5'] > 0) reg *= 2;
+  if (n['9a'] > 0) reg *= 2;
+  if (l['12l'] > 0) reg *= 1.5;
+
+  let fin = 1;
+  if (l['1l'] > 0) fin *= 2;
+  if (l['6la'] > 0) fin *= 0.65;
+  if (l['6lb'] > 0) fin *= 1.7;
+  if (l['7l'] > 0) fin *= 2;
+  if (l['8l'] > 0) fin *= 1.5;
+  if (l['9l'] > 0) fin *= 1.5;
+
+  return { pps: (1 + add) * reg * fin, base: 1, add, reg, fin };
+}
+
+function calcLoopFactor(overrideL6 = null) {
+  // overrideL6: null = use state, 'none' = neither, 'comp' = 6la, 'exp' = 6lb
+  const l = S.loop;
+  let mult = 1;
+  if (l['3l'] > 0) mult *= 1.2;
+  if (l['4l'] > 0) mult *= 1.35;
+  if (l['8l'] > 0) mult *= 1.35;
+
+  // Handle 6la/6lb
+  const use6la = overrideL6 === null ? l['6la'] > 0 : overrideL6 === 'comp';
+  const use6lb = overrideL6 === null ? l['6lb'] > 0 : overrideL6 === 'exp';
+  if (use6la) mult *= 2;
+  if (use6lb) mult *= 0.5;
+
+  // #11l dynamic
+  if (l['11l'] > 0) {
+    const totalLoops = parseNum(document.getElementById('inp-totalloops')?.value || '0');
+    const raw = Math.max(totalLoops, 0) / 1000;
+    const boost = 1 + Math.pow(raw, 0.4) * 0.5;
+    mult *= Math.min(boost, 5);
+  }
+
+  return mult;
+}
+
+function calcPpsForScenario(override6) {
+  const n = S.normal, l = S.loop;
+  if (n['1'] === 0) return 0;
+  let add = 0;
+  add += (n['4'] || 0) * 1;
+  add += (n['6'] || 0) * 3;
+  add += (n['7'] || 0) * 8;
+  add += (n['8'] || 0) * 12;
+  add += (n['9b'] || 0) * 30;
+  add += (n['10'] || 0) * 25;
+
+  let reg = 1;
+  if (n['2'] > 0) reg *= 2;
+  if (n['3'] > 0) reg *= 1.5;
+  if (n['5'] > 0) reg *= 2;
+  if (n['9a'] > 0) reg *= 2;
+  if (l['12l'] > 0) reg *= 1.5;
+
+  let fin = 1;
+  if (l['1l'] > 0) fin *= 2;
+  // override 6la/6lb
+  const use6la = override6 === null ? l['6la'] > 0 : override6 === 'comp';
+  const use6lb = override6 === null ? l['6lb'] > 0 : override6 === 'exp';
+  if (use6la) fin *= 0.65;
+  if (use6lb) fin *= 1.7;
+  if (l['7l'] > 0) fin *= 2;
+  if (l['8l'] > 0) fin *= 1.5;
+  if (l['9l'] > 0) fin *= 1.5;
+
+  return (1 + add) * reg * fin;
+}
+
+// ─── MAIN RECALC ─────────────────────────────────────────────────────────────
+let chart = null;
+
+function recalc() {
+  const { pps, base, add, reg, fin } = calcPtsComponents();
+  const lf = calcLoopFactor();
+  const targetPts = parseNum(document.getElementById('inp-target').value);
+  const timer = parseNum(document.getElementById('inp-timer').value) || 180;
+  const resetPts = parseNum(document.getElementById('inp-reset-pts').value);
+  const totalLoops = parseNum(document.getElementById('inp-totalloops')?.value || '0');
+
+  // Pts per second display
+  const ppsEl = document.getElementById('pts-stat');
+  ppsEl.textContent = fmt(pps);
+  ppsEl.className = 'stat-num ' + (pps === 0 ? 'stat-num--zero' : 'stat-num--pts');
+  document.getElementById('pts-sub').textContent = pps === 0 ? 'Purchase #1 (Fresh Start) to begin'
+    : `(1 + ${fmt(add)}) × ${fmt(reg)} × ${fmt(fin)} = ${fmt(pps)} Þ/s`;
+
+  // Breakdown
+  document.getElementById('bd-add').textContent = `1 + ${fmt(add)} = ${fmt(1 + add)}`;
+  document.getElementById('bd-reg').textContent = `×${fmt(reg)}`;
+  document.getElementById('bd-fin').textContent = `×${fmt(fin)}`;
+  document.getElementById('bd-result').textContent = `${fmt(pps)} Þ/s`;
+
+  // Mini grid
+  document.getElementById('mm-add').textContent = '+' + fmt(add);
+  document.getElementById('mm-reg').textContent = '×' + fmt(reg);
+  document.getElementById('mm-fin').textContent = '×' + fmt(fin);
+
+  // Time to target
+  if (pps > 0 && targetPts > 0) {
+    document.getElementById('time-to-target').textContent = fmtTime(targetPts / pps);
+  } else {
+    document.getElementById('time-to-target').textContent = '—';
+  }
+
+  // Pts at timer
+  document.getElementById('pts-at-timer').textContent = fmt(pps * timer);
+
+  // Loop factor
+  document.getElementById('lps-factor').textContent = '×' + fmt(lf);
+
+  // Dynamic boost
+  if (S.loop['11l'] > 0) {
+    const raw = Math.max(totalLoops, 0) / 1000;
+    const boost = Math.min(1 + Math.pow(raw, 0.4) * 0.5, 5);
+    document.getElementById('dyn-boost-val').textContent = '×' + boost.toFixed(4) + ' boost';
+  }
+
+  // Loops gained on reset
+  const loopsGained = resetPts > 0 ? (resetPts / 2000) * lf : 0;
+  document.getElementById('lps-gained').textContent = fmt(loopsGained) + ' Ⱡ';
+
+  // Loops per hour efficiency (proportional: Þ/s × loopFactor)
+  const eff = pps * lf;
+  document.getElementById('lps-per-hour').textContent = eff > 0 ? fmt(eff) + ' (Þ/s × Ⱡ Factor)' : '—';
+
+  // ── COMPARISON ────────────────────────────────────────────────────────────
+  // Compute each scenario
+  const scenNone = { pps: calcPpsForScenario('none'), lf: calcLoopFactor('none') };
+  const scenComp = { pps: calcPpsForScenario('comp'), lf: calcLoopFactor('comp') };
+  const scenExp  = { pps: calcPpsForScenario('exp'),  lf: calcLoopFactor('exp') };
+
+  // Eff = pps × loopFactor
+  scenNone.eff = scenNone.pps * scenNone.lf;
+  scenComp.eff = scenComp.pps * scenComp.lf;
+  scenExp.eff  = scenExp.pps  * scenExp.lf;
+
+  const maxEff = Math.max(scenNone.eff, scenComp.eff, scenExp.eff) || 1;
+  const maxPps = Math.max(scenNone.pps, scenComp.pps, scenExp.pps) || 1;
+
+  // Fill comparison cards
+  document.getElementById('cn-pts').textContent = fmt(scenNone.pps) + ' Þ/s';
+  document.getElementById('cn-lps').textContent = 'Ⱡ Factor: ×' + fmt(scenNone.lf);
+  document.getElementById('cn-eff').textContent = fmt(scenNone.eff);
+  document.getElementById('cn-bar').style.width = (scenNone.eff / maxEff * 100) + '%';
+
+  document.getElementById('cc-pts').textContent = fmt(scenComp.pps) + ' Þ/s';
+  document.getElementById('cc-lps').textContent = 'Ⱡ Factor: ×' + fmt(scenComp.lf);
+  document.getElementById('cc-eff').textContent = fmt(scenComp.eff);
+  document.getElementById('cc-bar').style.width = (scenComp.eff / maxEff * 100) + '%';
+
+  document.getElementById('ce-pts').textContent = fmt(scenExp.pps) + ' Þ/s';
+  document.getElementById('ce-lps').textContent = 'Ⱡ Factor: ×' + fmt(scenExp.lf);
+  document.getElementById('ce-eff').textContent = fmt(scenExp.eff);
+  document.getElementById('ce-bar').style.width = (scenExp.eff / maxEff * 100) + '%';
+
+  // Winner badges
+  document.getElementById('cc-badge').style.display = 'none';
+  document.getElementById('ce-badge').style.display = 'none';
+  const winner = scenComp.eff >= scenExp.eff ? 'comp' : 'exp';
+  if (winner === 'comp' && scenComp.eff > scenNone.eff)
+    document.getElementById('cc-badge').style.display = 'inline-block';
+  if (winner === 'exp' && scenExp.eff > scenNone.eff)
+    document.getElementById('ce-badge').style.display = 'inline-block';
+
+  // Verdict text
+  const compRatio = scenNone.pps > 0 ? scenComp.eff / scenNone.eff : 1;
+  const expRatio  = scenNone.pps > 0 ? scenExp.eff  / scenNone.eff  : 1;
+  let verdict = '';
+  if (pps === 0) {
+    verdict = 'Select some upgrades to see the comparison.';
+  } else {
+    const cr = compRatio.toFixed(2), er = expRatio.toFixed(2);
+    verdict = `Compression gives <b style="color:var(--lps)">${cr}×</b> the Ⱡ/time efficiency vs. neither, ` +
+              `while Expansion gives <b style="color:var(--green)">${er}×</b>. ` +
+              (winner === 'comp'
+                ? `<b style="color:var(--lps)">Compression is better for Ⱡ farming</b> — the ×2 Ⱡ factor outweighs the −35% Þ penalty. `
+                : `<b style="color:var(--green)">Expansion is better for Ⱡ farming</b> — the ×1.7 Þ boost outweighs the ×0.5 Ⱡ penalty. `) +
+              `(Expansion always gives +${fmt(scenExp.pps - scenNone.pps)} Þ/s over neither.)`;
+  }
+  document.getElementById('comp-verdict').innerHTML = verdict;
+
+  // Chart
+  updateChart(scenNone, scenComp, scenExp);
+}
+
+function updateChart(none, comp, exp) {
+  const ctx = document.getElementById('compChart').getContext('2d');
+  const labels = ['Þ/s', 'Ⱡ Factor', 'Ⱡ Efficiency (Þ/s × Ⱡ Factor)'];
+  const noneData = [none.pps, none.lf, none.eff];
+  const compData = [comp.pps, comp.lf, comp.eff];
+  const expData  = [exp.pps,  exp.lf,  exp.eff];
+
+  // Normalize each metric to max
+  const maxes = labels.map((_, i) => Math.max(noneData[i], compData[i], expData[i]) || 1);
+  const normalize = arr => arr.map((v, i) => v / maxes[i]);
+
+  if (chart) {
+    chart.data.datasets[0].data = normalize(noneData);
+    chart.data.datasets[1].data = normalize(compData);
+    chart.data.datasets[2].data = normalize(expData);
+    chart.data.datasets[0].rawData = noneData;
+    chart.data.datasets[1].rawData = compData;
+    chart.data.datasets[2].rawData = expData;
+    chart.update('none');
+    return;
+  }
+
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Neither',
+          data: normalize(noneData),
+          rawData: noneData,
+          backgroundColor: 'rgba(136,136,170,0.5)',
+          borderColor: 'rgba(136,136,170,0.9)',
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'Compression (#6la)',
+          data: normalize(compData),
+          rawData: compData,
+          backgroundColor: 'rgba(24,212,255,0.35)',
+          borderColor: 'rgba(24,212,255,0.9)',
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'Expansion (#6lb)',
+          data: normalize(expData),
+          rawData: expData,
+          backgroundColor: 'rgba(46,245,132,0.3)',
+          borderColor: 'rgba(46,245,132,0.9)',
+          borderWidth: 1, borderRadius: 4,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 250 },
+      plugins: {
+        legend: {
+          labels: { color: '#8888aa', font: { family: 'Sora', size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const raw = ctx.dataset.rawData?.[ctx.dataIndex];
+              return ` ${ctx.dataset.label}: ${fmt(raw)}`;
+            }
+          },
+          backgroundColor: '#14142280',
+          titleColor: '#e0e0f0',
+          bodyColor: '#8888aa',
+          borderColor: '#2d2d4a',
+          borderWidth: 1,
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#6666aa', font: { family: 'Sora', size: 11 } },
+          grid: { color: '#222238' }
+        },
+        y: {
+          ticks: {
+            color: '#6666aa',
+            font: { family: 'JetBrains Mono', size: 10 },
+            callback: v => (v * 100).toFixed(0) + '%'
+          },
+          grid: { color: '#222238' },
+          max: 1.05
+        }
+      }
+    }
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+updateUI();
+recalc();
+</script>
+</body>
+</html>
