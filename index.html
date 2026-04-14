@@ -22,6 +22,13 @@
   --red: #f54040;
   --purple: #bf7fff;
   --orange: #ff9020;
+  --pollution: #ff6b57;
+  --stable: #55ff7f;
+  --unstable: #ffb855;
+  --degraded: #ff964b;
+  --severe: #ff5e00;
+  --critical: #ff585b;
+  --maintenance: #00aaff;
   --text: #e0e0f0;
   --text2: #8888aa;
   --text3: #4a4a6a;
@@ -259,40 +266,6 @@ body {
 
 /* Separator */
 .sep { height: 1px; background: var(--border); margin: 4px 0; }
-/* ─── POLLUTION ─── */
-.phase-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 14px; border-radius: 8px;
-  font-family: var(--mono); font-size: 14px; font-weight: 700;
-  letter-spacing: 1px; text-transform: uppercase;
-  border: 1.5px solid currentColor;
-  transition: all 0.3s;
-}
-.phase-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.poll-bar-wrap {
-  margin-top: 10px; background: var(--border); border-radius: 4px; height: 7px; overflow: hidden;
-}
-.poll-bar-fill { height: 100%; border-radius: 4px; transition: width 0.35s, background 0.35s; }
-.poll-thresholds {
-  display: flex; justify-content: space-between;
-  font-size: 9px; color: var(--text3); font-family: var(--mono); margin-top: 3px;
-}
-.poll-adj {
-  margin-top: 12px; padding: 10px 14px; border-radius: 7px;
-  border: 1px solid; font-family: var(--mono); transition: all 0.3s;
-}
-.poll-adj-lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; opacity: 0.7; }
-.poll-adj-val { font-size: 26px; font-weight: 700; }
-.poll-mult { font-size: 12px; margin-top: 2px; opacity: 0.8; }
-.maint-toggle {
-  display: flex; align-items: center; gap: 8px; cursor: pointer;
-  padding: 6px 10px; border-radius: 6px;
-  border: 1px solid rgba(0,170,255,0.3); background: rgba(0,170,255,0.06);
-  font-size: 12px; color: #00aaff; user-select: none; transition: all 0.15s;
-}
-.maint-toggle:hover { background: rgba(0,170,255,0.1); }
-.maint-toggle input[type=checkbox] { accent-color: #00aaff; width: 14px; height: 14px; cursor: pointer; }
-
 
 /* Tooltip hint */
 .hint { font-size: 11px; color: var(--text3); font-style: italic; margin-top: 4px; }
@@ -589,7 +562,21 @@ body {
         <div class="stat-unit">Þ/s</div>
       </div>
       <div class="stat-sub" id="pts-sub">Purchase #1 (Fresh Start) to begin</div>
-      <div class="pts-adj-note" id="pts-adj-note" style="display:none;margin-top:3px;color:var(--orange)"></div>
+
+      <div class="mini-grid" style="margin-top:14px">
+        <div class="mini-card">
+          <div class="mini-lbl">Raw Þ/s</div>
+          <div class="mini-val" id="pts-raw" style="color:var(--text)">0</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-lbl">Pollution ×</div>
+          <div class="mini-val" id="pts-pollution-mult" style="font-size:18px;color:var(--stable)">×1</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-lbl">State</div>
+          <div class="mini-val" id="pts-pollution-state" style="font-size:18px;color:var(--stable)">Stable</div>
+        </div>
+      </div>
 
       <div class="bdown">
         <div class="bdown-row">
@@ -599,6 +586,14 @@ body {
         <div class="bdown-row">
           <span class="bdown-lbl">× Regular Multiplier</span>
           <span class="bdown-val" id="bd-reg" style="color:var(--pts)">×1</span>
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl">× Final Multiplier</span>
+          <span class="bdown-val" id="bd-fin
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl">× Pollution Multiplier</span>
+          <span class="bdown-val" id="bd-pollution" style="color:var(--pollution)">×1</span>
         </div>
         <div class="bdown-row">
           <span class="bdown-lbl">× Final Multiplier</span>
@@ -696,6 +691,55 @@ body {
       <div style="font-size:11px;color:var(--text3);margin-top:2px">Based on Þ/s × Loop Factor (higher = faster Ⱡ farming)</div>
     </div>
 
+
+    <!-- Pollution -->
+    <div class="card">
+      <div class="card-hd">Pollution / PM₁₀</div>
+      <div class="stat-main">
+        <div class="stat-num" id="pollution-stat" style="color:var(--pollution);text-shadow:0 0 30px rgba(255,107,87,0.22)">0</div>
+        <div class="stat-unit">PM₁₀</div>
+      </div>
+      <div class="stat-sub" id="pollution-sub">No active pollution sources selected.</div>
+
+      <div class="mini-grid" style="margin-top:14px">
+        <div class="mini-card">
+          <div class="mini-lbl">Pollution Phase</div>
+          <div class="mini-val" id="pollution-phase" style="font-size:18px">Stable</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-lbl">Phase Þ Multiplier</div>
+          <div class="mini-val" id="pollution-mult" style="font-size:18px">×1.00</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-lbl">Effective Þ/s</div>
+          <div class="mini-val" id="pollution-effective" style="font-size:18px;color:var(--pts)">0</div>
+        </div>
+      </div>
+
+      <div class="inp-row">
+        <span class="inp-lbl">Maintenance mode:</span>
+        <button class="sbtn" id="maintenance-toggle" onclick="toggleMaintenance()" style="width:auto;padding:0 10px;height:28px;font-family:var(--mono)">OFF</button>
+        <span class="inp-lbl" id="maintenance-desc">When enabled, Þ gain is forced to 15% while cleaning.</span>
+      </div>
+
+      <div class="bdown">
+        <div class="bdown-row">
+          <span class="bdown-lbl">Base pollution from selected upgrades</span>
+          <span class="bdown-val" id="pollution-base" style="color:var(--pollution)">0 PM₁₀</span>
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl">Applied state</span>
+          <span class="bdown-val" id="pollution-state-note">Stable</span>
+        </div>
+        <div class="bdown-row">
+          <span class="bdown-lbl">Threshold to next phase</span>
+          <span class="bdown-val" id="pollution-next">399 PM₁₀</span>
+        </div>
+      </div>
+
+      <div class="notice" id="pollution-notice" style="display:none"></div>
+    </div>
+
     <!-- Compression vs Expansion comparison -->
     <div class="card">
       <div class="card-hd">Compression vs. Expansion — Full Comparison</div>
@@ -752,7 +796,8 @@ body {
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const S = {
   normal: { '1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9a':0,'9b':0,'10':0 },
-  loop:   { '1l':0,'3l':0,'4l':0,'6la':0,'6lb':0,'7l':0,'8l':0,'9l':0,'11l':0,'12l':0 }
+  loop:   { '1l':0,'3l':0,'4l':0,'6la':0,'6lb':0,'7l':0,'8l':0,'9l':0,'11l':0,'12l':0 },
+  maintenance: false
 };
 
 // ─── UPGRADE RULES ───────────────────────────────────────────────────────────
@@ -787,11 +832,35 @@ const RULES = {
   }
 };
 
+
+const POLLUTION_PHASES = [
+  { key: 'stable', maxScore: 399, timesPoints: 1, color: 'var(--stable)', label: 'Stable', next: 'Unstable' },
+  { key: 'unstable', maxScore: 699, timesPoints: 0.75, color: 'var(--unstable)', label: 'Unstable', next: 'Degraded' },
+  { key: 'degraded', maxScore: 999, timesPoints: 0.5, color: 'var(--degraded)', label: 'Degraded', next: 'Severe' },
+  { key: 'severe', maxScore: 1399, timesPoints: 0.25, color: 'var(--severe)', label: 'Severe', next: 'Critical' },
+  { key: 'critical', maxScore: Infinity, timesPoints: 0, color: 'var(--critical)', label: 'Critical', next: null },
+];
+
+const POLLUTION_VALUES = {
+  normal: {
+    '1': 10, '2': 10, '3': 10, '4': 10, '5': 14, '6': 25, '7': 35, '8': 45, '9a': 300, '9b': 80, '10': 70
+  },
+  loop: {
+    '2l': 0
+  }
+};
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function fmt(n) {
   if (!isFinite(n) || isNaN(n)) return '∞';
   if (n === 0) return '0';
   const abs = Math.abs(n);
+
+  // Handle fractions cleanly so 0.75 becomes "0.75" instead of "750undefined".
+  if (abs < 1) {
+    return n.toFixed(4).replace(/\.?0+$/, '');
+  }
+
   const sfx = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd'];
   const i = Math.min(Math.floor(Math.log10(abs) / 3), sfx.length - 1);
   if (i === 0) {
@@ -927,6 +996,41 @@ function updateUI() {
   if (dyn) dyn.style.display = S.loop['11l'] > 0 ? 'block' : 'none';
 }
 
+
+function getPollutionForNormalUpgrade(id, amount) {
+  amount = amount || 0;
+  if (amount <= 0) return 0;
+  if (id === '8') {
+    const perLevel = S.loop['2l'] > 0 ? 15 : 45;
+    return perLevel * amount;
+  }
+  const per = POLLUTION_VALUES.normal[id] || 0;
+  return per * amount;
+}
+
+function calcPollution() {
+  let total = 0;
+  for (const [id, amount] of Object.entries(S.normal)) {
+    total += getPollutionForNormalUpgrade(id, amount);
+  }
+
+  const phase = POLLUTION_PHASES.find(p => total <= p.maxScore) || POLLUTION_PHASES[POLLUTION_PHASES.length - 1];
+  const maintenanceActive = !!S.maintenance && total > 0;
+  const effectiveMultiplier = maintenanceActive ? 0.15 : phase.timesPoints;
+  return { total, phase, maintenanceActive, effectiveMultiplier };
+}
+
+function toggleMaintenance() {
+  const pollution = calcPollution();
+  if (pollution.total <= 0) {
+    S.maintenance = false;
+    recalc();
+    return;
+  }
+  S.maintenance = !S.maintenance;
+  recalc();
+}
+
 // ─── CALCULATION ─────────────────────────────────────────────────────────────
 function calcPtsComponents() {
   const n = S.normal, l = S.loop;
@@ -1016,114 +1120,110 @@ function calcPpsForScenario(override6) {
   return (1 + add) * reg * fin;
 }
 
-
-// ─── POLLUTION PHASES ────────────────────────────────────────────────────────
-const PHASES = {
-  stable:      { label: 'STABLE',      maxScore: 399,      timesPoints: 1,    color: '#55ff7f', bg: 'rgba(85,255,127,0.08)',   borderAlpha: 0.35 },
-  unstable:    { label: 'UNSTABLE',    maxScore: 699,      timesPoints: 0.75, color: '#ffb855', bg: 'rgba(255,184,85,0.08)',   borderAlpha: 0.35 },
-  degraded:    { label: 'DEGRADED',    maxScore: 999,      timesPoints: 0.5,  color: '#ff964b', bg: 'rgba(255,150,75,0.08)',   borderAlpha: 0.35 },
-  severe:      { label: 'SEVERE',      maxScore: 1399,     timesPoints: 0.25, color: '#ff5e00', bg: 'rgba(255,94,0,0.1)',      borderAlpha: 0.4  },
-  critical:    { label: 'CRITICAL',    maxScore: Infinity, timesPoints: 0,    color: '#ff585b', bg: 'rgba(255,88,91,0.1)',     borderAlpha: 0.45 },
-  maintenance: { label: 'MAINTENANCE', maxScore: Infinity, timesPoints: 0.15, color: '#00aaff', bg: 'rgba(0,170,255,0.07)',   borderAlpha: 0.35 },
-};
-
-function getPollutionPhase(score, maintenance) {
-  if (maintenance) return PHASES.maintenance;
-  if (score <= PHASES.stable.maxScore)   return PHASES.stable;
-  if (score <= PHASES.unstable.maxScore) return PHASES.unstable;
-  if (score <= PHASES.degraded.maxScore) return PHASES.degraded;
-  if (score <= PHASES.severe.maxScore)   return PHASES.severe;
-  return PHASES.critical;
-}
-
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
 // ─── MAIN RECALC ─────────────────────────────────────────────────────────────
 let chart = null;
 
 function recalc() {
-  const { pps, base, add, reg, fin } = calcPtsComponents();
+  const { pps: rawPps, base, add, reg, fin } = calcPtsComponents();
+  const pollution = calcPollution();
+  const pps = rawPps * pollution.effectiveMultiplier;
   const lf = calcLoopFactor();
   const targetPts = parseNum(document.getElementById('inp-target').value);
   const timer = parseNum(document.getElementById('inp-timer').value) || 180;
   const resetPts = parseNum(document.getElementById('inp-reset-pts').value);
   const totalLoops = parseNum(document.getElementById('inp-totalloops')?.value || '0');
 
-  // Pollution phase
-  const pollScore    = parseNum(document.getElementById('inp-pollution').value);
-  const isMaint      = document.getElementById('chk-maintenance').checked;
-  const phase        = getPollutionPhase(pollScore, isMaint);
-  const adjPps       = pps * phase.timesPoints;
-
-  // Update phase badge
-  const badge = document.getElementById('phase-badge');
-  badge.textContent = '● ' + phase.label;
-  badge.style.color = phase.color;
-  badge.style.borderColor = phase.color;
-  badge.style.background  = phase.bg;
-
-  // Pollution progress bar (cap at 1399 for bar, beyond = 100%)
-  const barMax = 1399;
-  const barPct = isMaint ? 0 : Math.min(pollScore / barMax * 100, 100);
-  const pollBar = document.getElementById('poll-bar');
-  pollBar.style.width = barPct + '%';
-  pollBar.style.background = phase.color;
-
-  // Next threshold hint
-  const thresholds = [399, 699, 999, 1399];
-  const nextT = thresholds.find(t => pollScore < t);
-  const pollNext = document.getElementById('poll-next-thresh');
-  if (isMaint) { pollNext.textContent = ''; }
-  else if (nextT !== undefined) { pollNext.textContent = (nextT - pollScore) + ' until next phase'; }
-  else { pollNext.textContent = 'CRITICAL — 0% output'; }
-
-  // Adjusted box
-  const adjBox = document.getElementById('poll-adj-box');
-  adjBox.style.borderColor = hexToRgba(phase.color, 0.35);
-  adjBox.style.background  = phase.bg;
-  const adjLbl = document.getElementById('poll-adj-lbl');
-  adjLbl.style.color = phase.color;
-  adjLbl.textContent = isMaint ? 'Adjusted Þ/s (maintenance mode)' : 'Adjusted Þ/s (after pollution)';
-  const adjVal = document.getElementById('poll-adj-val');
-  adjVal.style.color = phase.color;
-  adjVal.textContent = fmt(adjPps);
-  const multDesc = document.getElementById('poll-mult-desc');
-  multDesc.style.color = phase.color;
-  const phaseDescs = {
-    STABLE: 'full output', UNSTABLE: '−25% output', DEGRADED: '−50% output',
-    SEVERE: '−75% output', CRITICAL: 'no output!', MAINTENANCE: '15% output (cleaning up)'
-  };
-  multDesc.textContent = `×${phase.timesPoints.toFixed(2)} output (${phase.label} — ${phaseDescs[phase.label] || ''})`;
-
-  // Note under main stat if penalty active
-  const adjNote = document.getElementById('pts-adj-note');
-  if (pps > 0 && phase.timesPoints < 1) {
-    adjNote.style.display = 'block';
-    adjNote.textContent = `⚠ ${phase.label}: actual output = ${fmt(adjPps)} Þ/s (×${phase.timesPoints})`;
-  } else {
-    adjNote.style.display = 'none';
-  }
-
   // Pts per second display
   const ppsEl = document.getElementById('pts-stat');
+  const ptsRawEl = document.getElementById('pts-raw');
+  const ptsPollutionMultEl = document.getElementById('pts-pollution-mult');
+  const ptsPollutionStateEl = document.getElementById('pts-pollution-state');
+
   ppsEl.textContent = fmt(pps);
   ppsEl.className = 'stat-num ' + (pps === 0 ? 'stat-num--zero' : 'stat-num--pts');
-  document.getElementById('pts-sub').textContent = pps === 0 ? 'Purchase #1 (Fresh Start) to begin'
-    : `(1 + ${fmt(add)}) × ${fmt(reg)} × ${fmt(fin)} = ${fmt(pps)} Þ/s`;
+  document.getElementById('pts-sub').textContent = rawPps === 0 ? 'Purchase #1 (Fresh Start) to begin'
+    : `(1 + ${fmt(add)}) × ${fmt(reg)} × ${fmt(fin)} × ${fmt(pollution.effectiveMultiplier)} = ${fmt(pps)} Þ/s`;
+
+  ptsRawEl.textContent = fmt(rawPps);
+  ptsPollutionMultEl.textContent = '×' + fmt(pollution.effectiveMultiplier);
+  ptsPollutionMultEl.style.color = pollution.maintenanceActive ? 'var(--maintenance)' : pollution.phase.color;
+  ptsPollutionStateEl.textContent = pollution.maintenanceActive ? 'Maintenance' : pollution.phase.label;
+  ptsPollutionStateEl.style.color = pollution.maintenanceActive ? 'var(--maintenance)' : pollution.phase.color;
 
   // Breakdown
   document.getElementById('bd-add').textContent = `1 + ${fmt(add)} = ${fmt(1 + add)}`;
   document.getElementById('bd-reg').textContent = `×${fmt(reg)}`;
   document.getElementById('bd-fin').textContent = `×${fmt(fin)}`;
+  document.getElementById('bd-pollution').textContent = `×${fmt(pollution.effectiveMultiplier)}`;
   document.getElementById('bd-result').textContent = `${fmt(pps)} Þ/s`;
 
   // Mini grid
   document.getElementById('mm-add').textContent = '+' + fmt(add);
   document.getElementById('mm-reg').textContent = '×' + fmt(reg);
   document.getElementById('mm-fin').textContent = '×' + fmt(fin);
+
+  // Pollution
+  const pollutionStat = document.getElementById('pollution-stat');
+  const pollutionPhase = document.getElementById('pollution-phase');
+  const pollutionMult = document.getElementById('pollution-mult');
+  const pollutionEffective = document.getElementById('pollution-effective');
+  const pollutionSub = document.getElementById('pollution-sub');
+  const pollutionBase = document.getElementById('pollution-base');
+  const pollutionStateNote = document.getElementById('pollution-state-note');
+  const pollutionNext = document.getElementById('pollution-next');
+  const pollutionNotice = document.getElementById('pollution-notice');
+  const maintenanceToggle = document.getElementById('maintenance-toggle');
+  const maintenanceDesc = document.getElementById('maintenance-desc');
+
+  pollutionStat.textContent = fmt(pollution.total);
+  pollutionPhase.textContent = pollution.maintenanceActive ? 'Maintenance' : pollution.phase.label;
+  pollutionPhase.style.color = pollution.maintenanceActive ? 'var(--maintenance)' : pollution.phase.color;
+  pollutionMult.textContent = '×' + fmt(pollution.effectiveMultiplier);
+  pollutionMult.style.color = pollution.maintenanceActive ? 'var(--maintenance)' : pollution.phase.color;
+  pollutionEffective.textContent = fmt(pps) + ' Þ/s';
+  pollutionBase.textContent = fmt(pollution.total) + ' PM₁₀';
+  pollutionStateNote.textContent = pollution.maintenanceActive ? 'Maintenance override active (15% Þ gain)' : `${pollution.phase.label} (${fmt(pollution.phase.timesPoints)}× Þ)`;
+  pollutionSub.textContent = pollution.total === 0
+    ? 'No active pollution sources selected.'
+    : pollution.maintenanceActive
+      ? `Cleaning is active. Raw output ${fmt(rawPps)} Þ/s is reduced to ${fmt(pps)} Þ/s.`
+      : `Selected upgrades produce ${fmt(pollution.total)} PM₁₀, placing you in ${pollution.phase.label}.`;
+
+  if (pollution.phase.next) {
+    pollutionNext.textContent = `${fmt(pollution.phase.maxScore + 1)} PM₁₀ → ${pollution.phase.next}`;
+  } else {
+    pollutionNext.textContent = 'No further phase';
+  }
+
+  maintenanceToggle.textContent = pollution.maintenanceActive ? 'ON' : 'OFF';
+  maintenanceToggle.style.borderColor = pollution.maintenanceActive ? 'var(--maintenance)' : 'var(--border2)';
+  maintenanceToggle.style.color = pollution.maintenanceActive ? 'var(--maintenance)' : 'var(--text)';
+  maintenanceDesc.textContent = pollution.total > 0
+    ? 'When enabled, Þ gain is forced to 15% while cleaning.'
+    : 'Maintenance requires pollution above 0 PM₁₀.';
+
+  if (pollution.maintenanceActive) {
+    pollutionNotice.style.display = 'flex';
+    pollutionNotice.style.background = 'rgba(0,170,255,0.08)';
+    pollutionNotice.style.borderColor = 'rgba(0,170,255,0.25)';
+    pollutionNotice.style.color = 'var(--maintenance)';
+    pollutionNotice.textContent = 'Maintenance mode is active. This ignores the phase multiplier and uses 15% Þ gain.';
+  } else if (pollution.phase.key === 'critical') {
+    pollutionNotice.style.display = 'flex';
+    pollutionNotice.style.background = 'rgba(245,64,64,0.08)';
+    pollutionNotice.style.borderColor = 'rgba(245,64,64,0.2)';
+    pollutionNotice.style.color = 'var(--red)';
+    pollutionNotice.textContent = 'Critical pollution fully stops Þ production until you clean up.';
+  } else if (pollution.phase.key === 'severe' || pollution.phase.key === 'degraded') {
+    pollutionNotice.style.display = 'flex';
+    pollutionNotice.style.background = 'rgba(255,144,32,0.08)';
+    pollutionNotice.style.borderColor = 'rgba(255,144,32,0.22)';
+    pollutionNotice.style.color = 'var(--orange)';
+    pollutionNotice.textContent = 'High pollution is materially hurting Þ output. Consider a cleaner route or maintenance.';
+  } else {
+    pollutionNotice.style.display = 'none';
+    pollutionNotice.textContent = '';
+  }
 
   // Time to target
   if (pps > 0 && targetPts > 0) {
@@ -1154,10 +1254,28 @@ function recalc() {
   document.getElementById('lps-per-hour').textContent = eff > 0 ? fmt(eff) + ' (Þ/s × Ⱡ Factor)' : '—';
 
   // ── COMPARISON ────────────────────────────────────────────────────────────
+  const pollutionMultiplierForScenario = (override) => {
+    const current8 = S.normal['8'] || 0;
+    let total = 0;
+    for (const [id, amount] of Object.entries(S.normal)) {
+      if (id === '8') {
+        const perLevel = S.loop['2l'] > 0 ? 15 : 45;
+        total += perLevel * amount;
+      } else {
+        total += (POLLUTION_VALUES.normal[id] || 0) * amount;
+      }
+    }
+    const phase = POLLUTION_PHASES.find(p => total <= p.maxScore) || POLLUTION_PHASES[POLLUTION_PHASES.length - 1];
+    return S.maintenance && total > 0 ? 0.15 : phase.timesPoints;
+  };
+
   // Compute each scenario
-  const scenNone = { pps: calcPpsForScenario('none'), lf: calcLoopFactor('none') };
-  const scenComp = { pps: calcPpsForScenario('comp'), lf: calcLoopFactor('comp') };
-  const scenExp  = { pps: calcPpsForScenario('exp'),  lf: calcLoopFactor('exp') };
+  const scenNone = { rawPps: calcPpsForScenario('none'), lf: calcLoopFactor('none') };
+  const scenComp = { rawPps: calcPpsForScenario('comp'), lf: calcLoopFactor('comp') };
+  const scenExp  = { rawPps: calcPpsForScenario('exp'),  lf: calcLoopFactor('exp') };
+  scenNone.pps = scenNone.rawPps * pollutionMultiplierForScenario('none');
+  scenComp.pps = scenComp.rawPps * pollutionMultiplierForScenario('comp');
+  scenExp.pps  = scenExp.rawPps  * pollutionMultiplierForScenario('exp');
 
   // Eff = pps × loopFactor
   scenNone.eff = scenNone.pps * scenNone.lf;
