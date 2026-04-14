@@ -456,6 +456,16 @@ body {
       </div>
     </div>
 
+    <!-- #2l -->
+    <div class="upg upg--disabled" id="upg-2l" onclick="toggleUpg('2l','loop')">
+      <div class="cbox" id="cbox-2l"></div>
+      <div class="upg-badge upg-badge--l" id="badge-2l">#2l</div>
+      <div class="upg-info">
+        <div class="upg-name">Damage Control</div>
+        <div class="upg-effect"><span class="e-lps">#8 pollution: 45 → 15</span> per level</div>
+      </div>
+    </div>
+
     <!-- #7l -->
     <div class="upg" id="upg-7l" onclick="toggleUpg('7l','loop')">
       <div class="cbox" id="cbox-7l"></div>
@@ -796,7 +806,7 @@ body {
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const S = {
   normal: { '1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9a':0,'9b':0,'10':0 },
-  loop:   { '1l':0,'3l':0,'4l':0,'6la':0,'6lb':0,'7l':0,'8l':0,'9l':0,'11l':0,'12l':0 },
+  loop:   { '1l':0,'2l':0,'3l':0,'4l':0,'6la':0,'6lb':0,'7l':0,'8l':0,'9l':0,'11l':0,'12l':0 },
   maintenance: false
 };
 
@@ -820,6 +830,7 @@ const RULES = {
   },
   loop: {
     '1l':  { parents: [], max: () => 1 },
+    '2l':  { parents: ['l:1l'], max: () => 1 },
     '3l':  { parents: [], max: () => 1 },
     '4l':  { parents: [], max: () => 1 },
     '6la': { parents: [], max: () => 1, locks: 'l:6lb' },
@@ -979,14 +990,15 @@ function updateUI() {
   });
 
   // Loop checkboxes
-  ['1l','3l','4l','6la','6lb','7l','8l','9l','11l','12l'].forEach(id => {
+  ['1l','2l','3l','4l','6la','6lb','7l','8l','9l','11l','12l'].forEach(id => {
     const el = document.getElementById('upg-' + id);
     const cb = document.getElementById('cbox-' + id);
     const bd = document.getElementById('badge-' + id);
     if (!el) return;
+    const ok = parentsOk('loop', id);
     const locked = isLocked('loop', id);
     const on = (S.loop[id] || 0) > 0;
-    el.className = 'upg' + (locked ? ' upg--locked' : '') + (on ? ' upg--on' : '');
+    el.className = 'upg' + (!ok ? ' upg--disabled' : '') + (locked ? ' upg--locked' : '') + (on ? ' upg--on' : '');
     if (cb) cb.className = 'cbox' + (on ? ' checked--l' : '');
     if (bd) bd.className = 'upg-badge upg-badge--l' + (on ? ' active-loop' : '');
   });
@@ -1187,7 +1199,7 @@ function recalc() {
     ? 'No active pollution sources selected.'
     : pollution.maintenanceActive
       ? `Cleaning is active. Raw output ${fmt(rawPps)} Þ/s is reduced to ${fmt(pps)} Þ/s.`
-      : `Selected upgrades produce ${fmt(pollution.total)} PM₁₀, placing you in ${pollution.phase.label}.`;
+      : `Selected upgrades produce ${fmt(pollution.total)} PM₁₀, placing you in ${pollution.phase.label}${S.loop['2l'] > 0 ? ' (#2l active: #8 uses 15 PM₁₀/level)' : ''}.`;
 
   if (pollution.phase.next) {
     pollutionNext.textContent = `${fmt(pollution.phase.maxScore + 1)} PM₁₀ → ${pollution.phase.next}`;
